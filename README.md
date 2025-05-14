@@ -7,7 +7,7 @@
 3. Create `.env` with:
    ```
    GEMINI_API_KEY=your_api_key
-   GEMINI_API_URL=https://gemini.googleapis.com
+   GEMINI_MODEL='name of model'
    REDIS_URL=redis://localhost:6379/1
    ```
 4. `rails db:create db:migrate`
