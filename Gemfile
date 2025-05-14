@@ -8,3 +8,6 @@ gem 'redis', '~> 5.0'
 gem 'sidekiq'
 gem 'httparty'
 gem 'dotenv-rails', groups: [:development, :test]
+gem 'redis'
+gem 'redis-rails'
+gem 'sidekiq'
