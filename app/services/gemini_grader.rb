@@ -1,44 +1,71 @@
 class GeminiGrader
   include HTTParty
-  base_uri ENV.fetch('GEMINI_API_URL', 'https://gemini.googleapis.com')
+  base_uri 'https://generativelanguage.googleapis.com'
 
-  def initialize(content:, assignment_type:)
-    @content = content
-    @type = assignment_type
-    @api_key = ENV.fetch('GEMINI_API_KEY')
+  def initialize(api_key:, model: ENV.fetch('GEMINI_MODEL', 'gemini-2.0-flash'))
+    @api_key = api_key
+    @model   = model
   end
 
-  def grade
-    prompt = build_prompt
-    response = self.class.post(
-      "/v1beta2/models/text-bison-001:generateMessage",
-      headers: { 'Content-Type' => 'application/json', 'Authorization' => "Bearer #{@api_key}" },
-      body: {
-        prompt: { text: prompt },
-        temperature: 0.2,
-        candidate_count: 1
-      }.to_json
+  def grade(content:, assignment_type:)
+    url = "/v1beta/models/#{@model}:generateContent?key=#{@api_key}"
+
+    payload = {
+      contents: [
+        {
+          parts: [{ text: build_prompt(content, assignment_type) }]
+        }
+      ],
+      generationConfig: {
+        temperature:     0.0,
+        candidateCount:  1,
+        maxOutputTokens: 512
+      }
+    }
+
+    resp = self.class.post(
+      url,
+      headers: { 'Content-Type' => 'application/json' },
+      body:    payload.to_json
     )
-    parse_response(response)
+
+    puts "Gemini raw response:\n#{resp.body}\n\n"
+
+    handle_errors!(resp)
+    parse_response(JSON.parse(resp.body))
   end
 
   private
 
-  def build_prompt
+  def build_prompt(content, assignment_type)
     <<~PROMPT
-      You are an expert grader. Grade the following #{@type} submission. Provide:
-      1. A grade from 0 to 100.
-      2. Detailed feedback on strengths and weaknesses.
-      3. Suggestions for improvement.
+      You are an expert grader.
+      **Return raw JSON only** with keys (no markdown/code fences):
+      - "grade"       (integer 0–100)
+      - "feedback"    (string of strengths & weaknesses)
+      - "suggestions" (string with concrete improvement tips)
 
-      Submission:
-      #{@content}
+      Grade this #{assignment_type} submission:
+
+      #{content}
     PROMPT
   end
 
-  def parse_response(response)
-    data = JSON.parse(response.body)
-    candidate = data.dig('candidates', 0, 'content')
-    { raw: candidate }
+  def handle_errors!(response)
+    return if response.success?
+    err = JSON.parse(response.body)['error'] rescue response.body
+    raise "Gemini API error (HTTP #{response.code}): #{err}"
+  end
+
+  def parse_response(body)
+    raw = body.dig('candidates', 0, 'content', 'parts', 0, 'text') ||
+          body.dig('choices',    0, 'message', 'content')
+
+    json_str = raw
+      .gsub(/\A```(?:json)?\s*/, '') 
+      .gsub(/```+\z/, '') 
+      .strip
+
+    JSON.parse(json_str)
   end
 end
