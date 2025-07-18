@@ -7,6 +7,6 @@ gem 'puma', '~> 6.0'
 gem 'sidekiq'
 gem 'httparty'
 gem 'dotenv-rails', groups: [:development, :test]
-gem 'redis', '~> 5.0'
+gem 'redis', '~> 5.4'
 gem 'redis-rails'
 gem 'sidekiq'
