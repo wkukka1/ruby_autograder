@@ -3,7 +3,7 @@ source 'https://rubygems.org'
 gem 'bootsnap', '>= 1.4.4', require: false
 gem 'rails', '~> 7.1'
 gem 'sqlite3', '~> 1.4'
-gem 'puma', '~> 6.0'
+gem 'puma', '~> 7.2'
 gem 'sidekiq'
 gem 'httparty'
 gem 'dotenv-rails', groups: [:development, :test]
